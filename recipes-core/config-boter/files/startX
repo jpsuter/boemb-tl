@@ -1,0 +1,8 @@
+echo ${$} > /var/run/startX.pid
+while true
+do
+  /opt/scripts/config.sh
+  rm /home/kiosk/.config/chromium/Singleton*
+  rm -r /home/kiosk/.cache/chromium
+  /usr/bin/xinit /etc/X11/xinitrc -- /usr/bin/X -br -s 1440 -nocursor
+done

@@ -1,0 +1,16 @@
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+  address 192.168.0.3
+  netmask 255.255.255.0
+
+auto wlan0
+iface wlan0 inet static
+  address 10.6.19.253
+  netmask 255.255.0.0
+  gateway 10.6.255.254
+  wireless_mode managed
+  wpa-conf /opt/config/wpa_supplicant.conf
+  pre-up /usr/sbin/iw phy phy0 set antenna 1 1

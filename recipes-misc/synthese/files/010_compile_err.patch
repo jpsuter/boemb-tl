@@ -1,0 +1,597 @@
+diff -Naur a/src/00_framework/CoordinatesSystem.cpp b/src/00_framework/CoordinatesSystem.cpp
+--- a/src/00_framework/CoordinatesSystem.cpp	2017-07-14 16:48:25.953209728 +0200
++++ b/src/00_framework/CoordinatesSystem.cpp	2017-07-17 09:38:20.503980276 +0200
+@@ -50,7 +50,7 @@
+ 	boost::shared_ptr<geos::geom::Point> CoordinatesSystem::convertPoint(
+ 		const geos::geom::Point& source
+ 	) const	{
+-		return static_pointer_cast<Point,Geometry>(convertGeometry(static_cast<const Geometry&>(source)));
++		return dynamic_pointer_cast<Point,Geometry>(convertGeometry(static_cast<const Geometry&>(source)));
+ 	}
+ 
+ 
+diff -Naur a/src/00_framework/GeometryField.hpp b/src/00_framework/GeometryField.hpp
+--- a/src/00_framework/GeometryField.hpp	2017-07-14 16:54:24.536338762 +0200
++++ b/src/00_framework/GeometryField.hpp	2017-07-17 11:12:48.798045859 +0200
+@@ -102,7 +102,7 @@
+ 
+ 				try
+ 				{
+-					return boost::static_pointer_cast<T, geos::geom::Geometry>(
++					return boost::dynamic_pointer_cast<T, geos::geom::Geometry>(
+ 						CoordinatesSystem::GetInstanceCoordinatesSystem().convertGeometry(
+ 							*boost::shared_ptr<geos::geom::Geometry>(reader.read(s))
+ 					)	);
+@@ -153,7 +153,7 @@
+ 				if(value)
+ 				{
+ 					return typename GeometryField<T>::_Type(
+-						static_cast<T*>(
++						dynamic_cast<T*>(
+ 							value->clone()
+ 					)	);
+ 				}
+diff -Naur a/src/01_util/Env.cpp b/src/01_util/Env.cpp
+--- a/src/01_util/Env.cpp	2017-07-14 16:54:24.540338753 +0200
++++ b/src/01_util/Env.cpp	2017-07-17 09:38:20.507980263 +0200
+@@ -180,7 +180,7 @@
+ 				return make_pair(object, sourceObject);
+ 			}
+ 
+-			return make_pair(object, shared_ptr<Registrable>());
++			return make_pair(object, boost::shared_ptr<Registrable>());
+ 		}
+ 
+ 
+diff -Naur a/src/01_util/ParametersMap.cpp b/src/01_util/ParametersMap.cpp
+--- a/src/01_util/ParametersMap.cpp	2017-07-14 16:54:24.540338753 +0200
++++ b/src/01_util/ParametersMap.cpp	2017-07-17 09:38:20.511980251 +0200
+@@ -498,7 +498,7 @@
+ 			{
+ 				if(dynamic_cast<Point*>(pm._geometry.get()))
+ 				{
+-					Point* point(static_cast<Point*>(pm._geometry.get()));
++					Point* point(dynamic_cast<Point*>(pm._geometry.get()));
+ 					_outputKeyValue("type", "Point", first);
+ 					_os	<< "," << _eol << _indentation << "\"coordinates\"" << _sep;
+ 					_indent();
+@@ -510,7 +510,7 @@
+ 				}
+ 				else if(dynamic_cast<LineString*>(pm._geometry.get()))
+ 				{
+-					LineString* lineString(static_cast<LineString*>(pm._geometry.get()));
++					LineString* lineString(dynamic_cast<LineString*>(pm._geometry.get()));
+ 					_outputKeyValue("type", "LineString", first);
+ 					_os	<< "," << _eol << _indentation << "\"coordinates\"" << _sep;
+ 					_indent();
+diff -Naur a/src/10_db/101_sqlite/SQLiteDB.h b/src/10_db/101_sqlite/SQLiteDB.h
+--- a/src/10_db/101_sqlite/SQLiteDB.h	2017-07-14 16:48:25.969209689 +0200
++++ b/src/10_db/101_sqlite/SQLiteDB.h	2017-07-17 09:38:20.511980251 +0200
+@@ -31,7 +31,7 @@
+ #include <boost/filesystem/path.hpp>
+ #include <boost/thread/tss.hpp>
+ #include <boost/thread/recursive_mutex.hpp>
+-#include <spatialite/sqlite3.h>
++#include <spatialite/sqlite.h>
+ 
+ namespace synthese
+ {
+diff -Naur a/src/18_graph/Edge.cpp b/src/18_graph/Edge.cpp
+--- a/src/18_graph/Edge.cpp	2017-07-14 16:54:24.580338654 +0200
++++ b/src/18_graph/Edge.cpp	2017-07-17 09:38:20.515980238 +0200
+@@ -548,7 +548,7 @@
+ 				getFromVertex()->hasGeometry() &&
+ 				_next->getFromVertex()->hasGeometry()
+ 			){
+-				CoordinateSequence* cs(geometryFactory.getCoordinateSequenceFactory()->create(0, 2));
++				CoordinateSequence* cs(geometryFactory.getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 				cs->add(*getFromVertex()->getGeometry()->getCoordinate(), false);
+ 				cs->add(*_next->getFromVertex()->getGeometry()->getCoordinate(), false);
+ 				if(cs->size() != 2)
+diff -Naur a/src/18_graph/Path.cpp b/src/18_graph/Path.cpp
+--- a/src/18_graph/Path.cpp	2017-07-14 16:54:24.580338654 +0200
++++ b/src/18_graph/Path.cpp	2017-07-17 09:38:20.515980238 +0200
+@@ -602,7 +602,7 @@
+ 
+ 			// Geos factories
+ 			const GeometryFactory& gf(CoordinatesSystem::GetDefaultGeometryFactory());
+-			geos::geom::CoordinateSequence *coords(gf.getCoordinateSequenceFactory()->create(0,2));
++			geos::geom::CoordinateSequence *coords(gf.getCoordinateSequenceFactory()->create(std::size_t(0),2));
+ 
+ 			// Handle empty roads
+ 			if(_edges.empty())
+diff -Naur a/src/18_graph/ServicePointer.cpp b/src/18_graph/ServicePointer.cpp
+--- a/src/18_graph/ServicePointer.cpp	2017-07-14 16:54:24.584338645 +0200
++++ b/src/18_graph/ServicePointer.cpp	2017-07-17 09:38:20.515980238 +0200
+@@ -338,7 +338,7 @@
+ 				CoordinatesSystem::GetDefaultGeometryFactory()
+ 			);
+ 
+-			CoordinateSequence* cs(geometryFactory.getCoordinateSequenceFactory()->create(0, 2));
++			CoordinateSequence* cs(geometryFactory.getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 			bool drtAreaSequence = false;
+ 			bool hasDRTArea = false;
+ 			Coordinate previousCoordinates;
+@@ -396,7 +396,7 @@
+ 			}
+ 			else if (hasDRTArea)
+ 			{
+-				CoordinateSequence* csTwoPoints(geometryFactory.getCoordinateSequenceFactory()->create(0, 2));
++				CoordinateSequence* csTwoPoints(geometryFactory.getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 				csTwoPoints->add(cs->getAt(0));
+ 				csTwoPoints->add(cs->getAt(cs->getSize()-1));
+ 				return boost::shared_ptr<LineString>(geometryFactory.createLineString(csTwoPoints));
+diff -Naur a/src/19_inter_synthese/SpecificPostInstall.cpp b/src/19_inter_synthese/SpecificPostInstall.cpp
+--- a/src/19_inter_synthese/SpecificPostInstall.cpp	2017-07-14 16:54:24.588338635 +0200
++++ b/src/19_inter_synthese/SpecificPostInstall.cpp	2017-07-17 09:38:20.519980225 +0200
+@@ -114,7 +114,7 @@
+ 			Request& request
+ 		) {
+ 
+-			shared_ptr<InterSYNTHESEConfig> myConfig(getMyConfig());
++			boost::shared_ptr<InterSYNTHESEConfig> myConfig(getMyConfig());
+ 			if(!myConfig)
+ 			{
+ 				Log::GetInstance().info("Creating InterSYNTHESEConfig " + std::string(MASTER_NAME));
+@@ -125,7 +125,7 @@
+ 				myConfig = getMyConfig();
+ 			}
+ 
+-			shared_ptr<InterSYNTHESESlave> mySlave(getMySlave());
++			boost::shared_ptr<InterSYNTHESESlave> mySlave(getMySlave());
+ 			if(!mySlave)
+ 			{
+ 				Log::GetInstance().info("Creating InterSYNTHESESlave " + std::string(SLAVE_NAME));
+diff -Naur a/src/32_geography/HTMLMap.cpp b/src/32_geography/HTMLMap.cpp
+--- a/src/32_geography/HTMLMap.cpp	2017-07-14 16:54:24.596338615 +0200
++++ b/src/32_geography/HTMLMap.cpp	2017-07-17 11:16:36.637360047 +0200
+@@ -52,7 +52,7 @@
+ 			bool highlight,
+ 			bool mousePosition,
+ 			const string id /*= "map" */
+-		):	_center(static_cast<Point*>(center.clone())),
++		):	_center(dynamic_cast<Point*>(center.clone())),
+ 			_horizontalDistance(horizontalDistance),
+ 			_id(id),
+ 			_editFieldName(editFieldName),
+diff -Naur a/src/32_geography/HTMLMap.hpp b/src/32_geography/HTMLMap.hpp
+--- a/src/32_geography/HTMLMap.hpp	2017-07-14 16:48:26.037209525 +0200
++++ b/src/32_geography/HTMLMap.hpp	2017-07-17 11:15:53.781489223 +0200
+@@ -81,7 +81,7 @@
+ 					const std::string& _htmlPopup,
+ 					std::size_t _width,
+ 					std::size_t _height
+-				):	point(static_cast<geos::geom::Point*>(_point.clone())),
++				):	point(dynamic_cast<geos::geom::Point*>(_point.clone())),
+ 					icon(_icon),
+ 					editionIcon(_editionIcon),
+ 					waitingIcon(_waitingIcon),
+@@ -101,7 +101,7 @@
+ 				MapLineString(
+ 					const geos::geom::LineString& _lineString,
+ 					const std::string& _updateRequest
+-				):	lineString(static_cast<geos::geom::LineString*>(_lineString.clone())),
++				):	lineString(dynamic_cast<geos::geom::LineString*>(_lineString.clone())),
+ 					updateRequest(_updateRequest)
+ 				{}
+ 			};
+diff -Naur a/src/33_algorithm/AStarShortestPathCalculator.cpp b/src/33_algorithm/AStarShortestPathCalculator.cpp
+--- a/src/33_algorithm/AStarShortestPathCalculator.cpp	2017-07-14 16:54:24.600338606 +0200
++++ b/src/33_algorithm/AStarShortestPathCalculator.cpp	2017-07-17 10:53:00.777783748 +0200
+@@ -498,7 +498,7 @@
+ 						{
+ 							// Build a custom geometry according to their offsets
+ 							resultGeometry = boost::shared_ptr<LineString>(
+-								static_cast<LineString*>(customChunkGeometry.extractLine(geometryOffset, chunkOffset)
++								dynamic_cast<LineString*>(customChunkGeometry.extractLine(geometryOffset, chunkOffset)
+ 							));
+ 
+ 							// If the offset of the start is bigger than the one from the end, use the reverse chunk
+@@ -556,7 +556,7 @@
+ 							if(customChunk->getFromVertex()->getKey() == chunk->getFromVertex()->getKey())
+ 							{
+ 								resultGeometry = boost::shared_ptr<LineString>(
+-									static_cast<LineString*>(customChunkGeometry.extractLine(geometryOffset, 0)
++									dynamic_cast<LineString*>(customChunkGeometry.extractLine(geometryOffset, 0)
+ 								));
+ 								useReverseChunk = true;
+ 							}
+@@ -565,7 +565,7 @@
+ 							else if(customChunk->getNext()->getFromVertex()->getKey() == chunk->getFromVertex()->getKey())
+ 							{
+ 								resultGeometry = boost::shared_ptr<LineString>(
+-									static_cast<LineString*>(customChunkGeometry.extractLine(geometryOffset, chunkLength)
++									dynamic_cast<LineString*>(customChunkGeometry.extractLine(geometryOffset, chunkLength)
+ 								));
+ 							}
+ 						}
+@@ -578,7 +578,7 @@
+ 							if(customChunk->getFromVertex()->getKey() == chunk->getNext()->getFromVertex()->getKey())
+ 							{
+ 								resultGeometry = boost::shared_ptr<LineString>(
+-									static_cast<LineString*>(customChunkGeometry.extractLine(0, geometryOffset)
++									dynamic_cast<LineString*>(customChunkGeometry.extractLine(0, geometryOffset)
+ 								));
+ 							}
+ 							// next chunk of proj share the same vertex than the next chunk of first, use the reverse chunk and build geometry from the end to our offset
+@@ -586,7 +586,7 @@
+ 							else if(customChunk->getNext()->getFromVertex()->getKey() == chunk->getNext()->getFromVertex()->getKey())
+ 							{
+ 								resultGeometry = boost::shared_ptr<LineString>(
+-									static_cast<LineString*>(customChunkGeometry.extractLine(chunkLength, geometryOffset)
++									dynamic_cast<LineString*>(customChunkGeometry.extractLine(chunkLength, geometryOffset)
+ 								));
+ 								useReverseChunk = true;
+ 							}
+@@ -724,7 +724,7 @@
+ 					// Standing on the current path as long as we can (the path don't change and we aren't at the end of the vector yet)
+ 					Path* currentPath = startChunk->getParentPath();
+ 					MetricOffset startMetricOffset = startChunk->getMetricOffset();
+-					CoordinateSequence* customSequence(CoordinatesSystem::GetDefaultGeometryFactory().getCoordinateSequenceFactory()->create(0, 2));
++					CoordinateSequence* customSequence(CoordinatesSystem::GetDefaultGeometryFactory().getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 
+ 					do {
+ 						// Build custom geometry for the service
+diff -Naur a/src/34_road/ProjectAddressAction.cpp b/src/34_road/ProjectAddressAction.cpp
+--- a/src/34_road/ProjectAddressAction.cpp	2017-07-14 16:48:26.041209516 +0200
++++ b/src/34_road/ProjectAddressAction.cpp	2017-07-17 11:20:49.324596800 +0200
+@@ -98,7 +98,7 @@
+ 			// Point
+ 			WKTReader reader(&CoordinatesSystem::GetStorageCoordinatesSystem().getGeometryFactory());
+ 			_point.reset(
+-				static_cast<Point*>(
++				dynamic_cast<Point*>(
+ 					reader.read(
+ 						map.get<string>(
+ 							ObjectUpdateAction::GetInputName<PointGeometry>()
+diff -Naur a/src/34_road/PublicPlaceEntranceCreationAction.cpp b/src/34_road/PublicPlaceEntranceCreationAction.cpp
+--- a/src/34_road/PublicPlaceEntranceCreationAction.cpp	2017-07-14 16:48:26.041209516 +0200
++++ b/src/34_road/PublicPlaceEntranceCreationAction.cpp	2017-07-17 11:24:12.043982578 +0200
+@@ -88,7 +88,7 @@
+ 			// Point
+ 			WKTReader reader(&CoordinatesSystem::GetStorageCoordinatesSystem().getGeometryFactory());
+ 			_point.reset(
+-				static_cast<Point*>(
++				dynamic_cast<Point*>(
+ 					reader.read(
+ 						map.get<string>(
+ 							ObjectUpdateAction::GetInputName<PointGeometry>()
+diff -Naur a/src/34_road/RoadChunkEdge.cpp b/src/34_road/RoadChunkEdge.cpp
+--- a/src/34_road/RoadChunkEdge.cpp	2017-07-14 16:54:24.604338596 +0200
++++ b/src/34_road/RoadChunkEdge.cpp	2017-07-17 11:28:55.407121340 +0200
+@@ -135,7 +135,7 @@
+ 				tmpGeom = static_cast<const RoadChunkEdge*>(this->getNext())->_roadChunk->getGeometry();
+ 				if (tmpGeom)
+ 				{
+-					tmpGeom.reset(static_cast<geos::geom::LineString*>(tmpGeom->reverse()));
++					tmpGeom.reset(dynamic_cast<geos::geom::LineString*>(tmpGeom->reverse()));
+ 				}
+ 			}
+ 			else
+diff -Naur a/src/35_pt/LineStopUpdateAction.cpp b/src/35_pt/LineStopUpdateAction.cpp
+--- a/src/35_pt/LineStopUpdateAction.cpp	2017-07-14 16:54:24.616338567 +0200
++++ b/src/35_pt/LineStopUpdateAction.cpp	2017-07-17 13:13:38.568049883 +0200
+@@ -234,7 +234,7 @@
+ 			{
+ 				WKTReader reader(&CoordinatesSystem::GetStorageCoordinatesSystem().getGeometryFactory());
+ 				_geometry = boost::shared_ptr<LineString>(
+-					static_cast<LineString*>(
++					dynamic_cast<LineString*>(
+ 						reader.read(map.get<string>(ObjectUpdateAction::GetInputName<LineStringGeometry>()))
+ 				)	);
+ 				_clearGeom = false;
+diff -Naur a/src/35_pt/PTUseRuleUpdateAction.cpp b/src/35_pt/PTUseRuleUpdateAction.cpp
+--- a/src/35_pt/PTUseRuleUpdateAction.cpp	2017-07-14 16:54:24.624338547 +0200
++++ b/src/35_pt/PTUseRuleUpdateAction.cpp	2017-07-17 14:19:31.079789481 +0200
+@@ -223,7 +223,7 @@
+ 			if(map.isDefined(PARAMETER_CAPACITY))
+ 			{
+ 				_capacity = map.getOptional<size_t>(PARAMETER_CAPACITY);
+-				if(_capacity && *_capacity == 0)
++				if(_capacity && *_capacity == std::size_t(0))
+ 				{
+ 					_capacity = UseRule::AccessCapacity();
+ 				}
+diff -Naur a/src/35_pt/ServiceTimetableUpdateAction.cpp b/src/35_pt/ServiceTimetableUpdateAction.cpp
+--- a/src/35_pt/ServiceTimetableUpdateAction.cpp	2017-07-14 16:54:24.628338537 +0200
++++ b/src/35_pt/ServiceTimetableUpdateAction.cpp	2017-07-17 13:57:37.855912820 +0200
+@@ -77,7 +77,7 @@
+ 				{
+ 					map.insert(PARAMETER_TIME, _time);
+ 				}
+-				map.insert(PARAMETER_COMMENT, _comment);
++				map.insert(PARAMETER_COMMENT, (std::string&)_comment);
+ 			}
+ 			return map;
+ 		}
+diff -Naur a/src/35_pt/StopPointAddAction.cpp b/src/35_pt/StopPointAddAction.cpp
+--- a/src/35_pt/StopPointAddAction.cpp	2017-07-14 16:54:24.632338528 +0200
++++ b/src/35_pt/StopPointAddAction.cpp	2017-07-17 14:04:53.870542797 +0200
+@@ -208,7 +208,7 @@
+ 			{
+ 				WKTReader reader(&CoordinatesSystem::GetStorageCoordinatesSystem().getGeometryFactory());
+ 				_point.reset(
+-					static_cast<Point*>(
++					dynamic_cast<Point*>(
+ 						reader.read(
+ 							map.get<string>(
+ 								ObjectUpdateAction::GetInputName<PointGeometry>()
+diff -Naur a/src/35_pt/StopPointUpdateAction.cpp b/src/35_pt/StopPointUpdateAction.cpp
+--- a/src/35_pt/StopPointUpdateAction.cpp	2017-07-14 16:54:24.632338528 +0200
++++ b/src/35_pt/StopPointUpdateAction.cpp	2017-07-17 14:03:56.386723358 +0200
+@@ -148,7 +148,7 @@
+ 			{
+ 				WKTReader reader(&CoordinatesSystem::GetStorageCoordinatesSystem().getGeometryFactory());
+ 				_point.reset(
+-					static_cast<Point*>(
++					dynamic_cast<Point*>(
+ 						reader.read(
+ 							map.get<string>(
+ 								ObjectUpdateAction::GetInputName<PointGeometry>()
+diff -Naur a/src/54_departure_boards/DisplayScreenContentFunction.cpp b/src/54_departure_boards/DisplayScreenContentFunction.cpp
+--- a/src/54_departure_boards/DisplayScreenContentFunction.cpp	2017-07-14 16:54:24.656338469 +0200
++++ b/src/54_departure_boards/DisplayScreenContentFunction.cpp	2017-07-17 16:29:07.767040344 +0200
+@@ -1110,7 +1110,7 @@
+ 
+ 			if(_useSAEDirectConnection)
+ 			{
+-				shared_ptr<MySQLconnector> connector(new MySQLconnector());
++				boost::shared_ptr<MySQLconnector> connector(new MySQLconnector());
+ 
+ 				SAEDate = (_date ? *_date : now);
+ 				// SAE system only work on one day, representing service after midnight at its start
+@@ -1127,7 +1127,7 @@
+ 					{
+ 						// Standard output, without leading 0 lowercase
+ 						string lineListRequest = "SELECT LOWER(TRIM(LEADING '0' FROM mnemo)) AS mnemo FROM LIGNE where jour = '" + SAEDateString + "';";
+-						shared_ptr<MySQLResult> result = connector->execQuery(lineListRequest);
++						boost::shared_ptr<MySQLResult> result = connector->execQuery(lineListRequest);
+ 
+ 						while(result->next())
+ 							_SAELine.insert(SAELine::value_type(result->getInfo("mnemo"), SAELine::mapped_type()));
+@@ -1197,7 +1197,7 @@
+ 					if(!operatorCodes.str().empty())
+ 					{
+ 						noRealTime = false;
+-						shared_ptr<MySQLconnector> connector(new MySQLconnector());
++						boost::shared_ptr<MySQLconnector> connector(new MySQLconnector());
+ 
+ 					// Limit the research to X hour after date, X is 1 hour times the number of result we wish for
+ 					time_duration searchDepth(hours(1) * _screen->get<DisplayTypePtr>()->get<RowsNumber>());
+@@ -1212,7 +1212,7 @@
+ 
+ 					if(_lineToDisplay)
+ 					{
+-						shared_ptr<const CommercialLine> commercialLine(_env->getRegistry<CommercialLine>().get(*_lineToDisplay));
++						boost::shared_ptr<const CommercialLine> commercialLine(_env->getRegistry<CommercialLine>().get(*_lineToDisplay));
+ 						string shortNameToDisplay = boost::algorithm::to_lower_copy(
+ 							trim_left_copy_if(commercialLine->getShortName(), is_any_of("0"))
+ 						);
+@@ -1258,7 +1258,7 @@
+ 								<< "	IF(@num >= " << SAELimit << ", IF(@itineraire_lign_com = ligne, IF(@itineraire_dest = oc_arrivee, IF(@itineraire_arret = arret_oc, FALSE, TRUE), TRUE), TRUE), TRUE)"
+ 						;
+ 
+-						shared_ptr<MySQLResult> result = connector->execQuery(request.str());
++						boost::shared_ptr<MySQLResult> result = connector->execQuery(request.str());
+ 
+ 						typedef map<string, boost::shared_ptr<StopPoint> > OCStops;
+ 						OCStops ocStops;
+@@ -1789,7 +1789,7 @@
+ 					if(!operatorCodes.str().empty())
+ 					{
+ 						noRealTime = false;
+-					shared_ptr<MySQLconnector> connector(new MySQLconnector());
++					boost::shared_ptr<MySQLconnector> connector(new MySQLconnector());
+ 
+ 					string sortingOrder(_wayIsBackward ? "DESC" : "ASC");
+ 
+@@ -1806,7 +1806,7 @@
+ 
+ 					if(_lineToDisplay)
+ 					{
+-						shared_ptr<const CommercialLine> commercialLine(_env->getRegistry<CommercialLine>().get(*_lineToDisplay));
++						boost::shared_ptr<const CommercialLine> commercialLine(_env->getRegistry<CommercialLine>().get(*_lineToDisplay));
+ 						string shortNameToDisplay = boost::algorithm::to_lower_copy(
+ 							trim_left_copy_if(commercialLine->getShortName(), is_any_of("0"))
+ 						);
+@@ -1843,7 +1843,7 @@
+ 
+ 					try
+ 					{
+-						shared_ptr<MySQLResult> result = connector->execQuery(request.str());
++						boost::shared_ptr<MySQLResult> result = connector->execQuery(request.str());
+ 
+ 						typedef map<string, boost::shared_ptr<StopPoint> > OCStops;
+ 						OCStops ocStops;
+@@ -2386,7 +2386,7 @@
+ 			pm.insert(DATA_DISPLAY_TRACK_NUMBER, screen.get<TrackNumberDisplay>());
+ 			if(screen.get<DisplayTypePtr>())
+ 			{
+-				pm.insert(DATA_INTERMEDIATE_STOPS_NUMBER, screen.get<DisplayTypePtr>()->get<MaxStopsNumber>());
++				pm.insert(DATA_INTERMEDIATE_STOPS_NUMBER, lexical_cast<int>(screen.get<DisplayTypePtr>()->get<MaxStopsNumber>()));
+ 			}
+ 			pm.insert(DATA_DISPLAY_TEAM, screen.get<DisplayTeam>());
+ 			pm.insert(DATA_STOP_NAME, screen.get<BroadCastPoint>() ? screen.get<BroadCastPoint>()->getFullName() : string());
+@@ -2587,7 +2587,7 @@
+ 
+ 			if(screen.get<DisplayTypePtr>())
+ 			{
+-				pm.insert(DATA_INTERMEDIATE_STOPS_NUMBER, screen.get<DisplayTypePtr>()->get<MaxStopsNumber>());
++				pm.insert(DATA_INTERMEDIATE_STOPS_NUMBER, lexical_cast<int>(screen.get<DisplayTypePtr>()->get<MaxStopsNumber>()));
+ 			}
+ 			pm.insert(DATA_DISPLAY_TEAM, screen.get<DisplayTeam>());
+ 			pm.insert(DATA_IS_REAL_TIME, row.first.getRTData());
+@@ -2979,7 +2979,7 @@
+ 			pm.insert(DATA_DISPLAY_TRACK_NUMBER, screen.get<TrackNumberDisplay>());
+ 			if(screen.get<DisplayTypePtr>())
+ 			{
+-				pm.insert(DATA_INTERMEDIATE_STOPS_NUMBER, screen.get<DisplayTypePtr>()->get<MaxStopsNumber>());
++				pm.insert(DATA_INTERMEDIATE_STOPS_NUMBER, lexical_cast<int>(screen.get<DisplayTypePtr>()->get<MaxStopsNumber>()));
+ 			}
+ 			pm.insert(DATA_DISPLAY_TEAM, screen.get<DisplayTeam>());
+ 			pm.insert(DATA_STOP_NAME, screen.get<BroadCastPoint>() ? screen.get<BroadCastPoint>()->getFullName() : string());
+diff -Naur a/src/54_departure_boards/UpdateDisplayScreenAction.cpp b/src/54_departure_boards/UpdateDisplayScreenAction.cpp
+--- a/src/54_departure_boards/UpdateDisplayScreenAction.cpp	2017-07-14 16:48:26.137209284 +0200
++++ b/src/54_departure_boards/UpdateDisplayScreenAction.cpp	2017-07-17 15:27:21.431074519 +0200
+@@ -139,7 +139,7 @@
+ 				{
+ 					geos::io::WKTReader reader(&CoordinatesSystem::GetStorageCoordinatesSystem().getGeometryFactory());
+ 					_point.reset(
+-						static_cast<geos::geom::Point*>(
++						dynamic_cast<geos::geom::Point*>(
+ 							reader.read(
+ 								map.get<string>(
+ 									ObjectUpdateAction::GetInputName<PointGeometry>()
+diff -Naur a/src/59_road_journey_planner/RoadJourneyPlannerResult.cpp b/src/59_road_journey_planner/RoadJourneyPlannerResult.cpp
+--- a/src/59_road_journey_planner/RoadJourneyPlannerResult.cpp	2017-07-14 16:48:26.145209265 +0200
++++ b/src/59_road_journey_planner/RoadJourneyPlannerResult.cpp	2017-07-17 13:31:27.720772594 +0200
+@@ -186,7 +186,7 @@
+ 
+ 			if(!_journeys.empty()) {
+ 				for (RoadJourneyPlannerResult::Journeys::const_iterator it(_journeys.begin()); it != _journeys.end(); ++it) {
+-					geos::geom::CoordinateSequence *coords(gf.getCoordinateSequenceFactory()->create(0,2));
++					geos::geom::CoordinateSequence *coords(gf.getCoordinateSequenceFactory()->create(std::size_t(0),2));
+ 
+ 					BOOST_FOREACH(const graph::ServicePointer& su,it->getServiceUses())
+ 					{
+diff -Naur a/src/61_data_exchange/HanoverRTFileFormat.cpp b/src/61_data_exchange/HanoverRTFileFormat.cpp
+--- a/src/61_data_exchange/HanoverRTFileFormat.cpp	2017-07-14 16:48:26.189209160 +0200
++++ b/src/61_data_exchange/HanoverRTFileFormat.cpp	2017-07-17 14:50:24.397933042 +0200
+@@ -250,7 +250,7 @@
+ 					{
+ 						offsetSum = 0;
+ 						linkStops.clear();
+-						sequence = dataSource.getActualCoordinateSystem().getGeometryFactory().getCoordinateSequenceFactory()->create(0, 2);
++						sequence = dataSource.getActualCoordinateSystem().getGeometryFactory().getCoordinateSequenceFactory()->create(std::size_t(0), 2);
+ 					}
+ 					lastLinkId = id;
+ 					string stopref(result->get<string>("sto_graph_key"));
+diff -Naur a/src/61_data_exchange/IneoFileFormat.cpp b/src/61_data_exchange/IneoFileFormat.cpp
+--- a/src/61_data_exchange/IneoFileFormat.cpp	2017-07-14 16:54:24.676338419 +0200
++++ b/src/61_data_exchange/IneoFileFormat.cpp	2017-07-17 14:49:42.838064404 +0200
+@@ -509,7 +509,7 @@
+ 							_mnlp_prefix + _getValue("NLP1"),
+ 							_mnlp_prefix + _getValue("NLP2")
+ 						);
+-						sequence = dataSource.getActualCoordinateSystem().getGeometryFactory().getCoordinateSequenceFactory()->create(0, 2);
++						sequence = dataSource.getActualCoordinateSystem().getGeometryFactory().getCoordinateSequenceFactory()->create(std::size_t(0), 2);
+ 
+ 						if(_points[_getValue("NLP1")].get())
+ 						{
+diff -Naur a/src/61_data_exchange/NavstreetsFileFormat.cpp b/src/61_data_exchange/NavstreetsFileFormat.cpp
+--- a/src/61_data_exchange/NavstreetsFileFormat.cpp	2017-07-14 16:48:26.193209150 +0200
++++ b/src/61_data_exchange/NavstreetsFileFormat.cpp	2017-07-17 15:11:34.081985290 +0200
+@@ -425,7 +425,7 @@
+ 							leftNode.reset(
+ 								new Crossing(
+ 									CrossingTableSync::getId(),
+-									boost::shared_ptr<Point>(geometry->getStartPoint())
++									(bool)boost::shared_ptr<Point>(geometry->getStartPoint())
+ 							)	);
+ 							Importable::DataSourceLinks links;
+ 							links.insert(make_pair(&dataSource, leftId));
+@@ -447,7 +447,7 @@
+ 							rightNode.reset(
+ 								new Crossing(
+ 									CrossingTableSync::getId(),
+-									boost::shared_ptr<Point>(geometry->getEndPoint())
++									(bool)boost::shared_ptr<Point>(geometry->getEndPoint())
+ 							)	);
+ 							Importable::DataSourceLinks links;
+ 							links.insert(make_pair(&dataSource, rightId));
+diff -Naur a/src/61_data_exchange/OSMFileFormat.cpp b/src/61_data_exchange/OSMFileFormat.cpp
+--- a/src/61_data_exchange/OSMFileFormat.cpp	2017-07-14 16:54:24.680338410 +0200
++++ b/src/61_data_exchange/OSMFileFormat.cpp	2017-07-17 15:30:52.958423514 +0200
+@@ -406,7 +406,7 @@
+ 	boost::shared_ptr<road::Crossing> crossing(
+ 		new road::Crossing(
+ 			road::CrossingTableSync::getId(),
+-			point
++			(bool)point
+ 	)	);
+ 	impex::Importable::DataSourceLinks links;
+ 	links.insert(make_pair(&(*_importer.getImport().get<impex::DataSource>()), 
+diff -Naur a/src/61_data_exchange/OpenStreetMapFileFormat.cpp b/src/61_data_exchange/OpenStreetMapFileFormat.cpp
+--- a/src/61_data_exchange/OpenStreetMapFileFormat.cpp	2017-07-14 16:54:24.680338410 +0200
++++ b/src/61_data_exchange/OpenStreetMapFileFormat.cpp	2017-07-17 15:29:47.922623708 +0200
+@@ -138,7 +138,7 @@
+ 					boost::shared_ptr<Point> houseCoord(
+ 						dataSource.getActualCoordinateSystem().createPoint(node->getLon(), node->getLat())
+ 					);
+-					housesNodesWithGeom.push_back(make_pair(node, static_cast<Point*>(houseCoord->clone())));
++					housesNodesWithGeom.push_back(make_pair(node, dynamic_cast<Point*>(houseCoord->clone())));
+ 				}
+ 			}
+ 
+@@ -292,7 +292,7 @@
+ 					}
+ 
+ 					const GeometryFactory& geometryFactory(CoordinatesSystem::GetDefaultGeometryFactory());
+-					boost::shared_ptr<CoordinateSequence> cs(geometryFactory.getCoordinateSequenceFactory()->create(0, 2));
++					boost::shared_ptr<CoordinateSequence> cs(geometryFactory.getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 					boost::shared_ptr<Crossing> startCrossing;
+ 					size_t rank(0);
+ 					MetricOffset metricOffset(0);
+@@ -334,7 +334,7 @@
+ 
+ 						if(!isLast)
+ 						{
+-							cs.reset(geometryFactory.getCoordinateSequenceFactory()->create(0, 2));
++							cs.reset(geometryFactory.getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 							cs->add(*point->getCoordinate());
+ 						}
+ 						++rank;
+@@ -674,7 +674,7 @@
+ 			boost::shared_ptr<Crossing> crossing(
+ 				new Crossing(
+ 					CrossingTableSync::getId(),
+-					position
++					(bool)position
+ 			)	);
+ 			Importable::DataSourceLinks links;
+ 			links.insert(make_pair(&(*_import.get<DataSource>()), lexical_cast<string>(node->getId())));
+diff -Naur a/src/61_data_exchange/RoadFileFormat.cpp b/src/61_data_exchange/RoadFileFormat.cpp
+--- a/src/61_data_exchange/RoadFileFormat.cpp	2017-07-14 16:48:26.197209140 +0200
++++ b/src/61_data_exchange/RoadFileFormat.cpp	2017-07-17 16:12:07.670357912 +0200
+@@ -209,7 +209,7 @@
+ 			{
+ 				crossing = new Crossing(
+ 					CrossingTableSync::getId(),
+-					boost::shared_ptr<Point>()
++					(bool)boost::shared_ptr<Point>()
+ 				);
+ 				Importable::DataSourceLinks links;
+ 				links.insert(make_pair(&*_import.get<DataSource>(), code));
+diff -Naur a/src/61_osm_import/OSMParser.cpp b/src/61_osm_import/OSMParser.cpp
+--- a/src/61_osm_import/OSMParser.cpp	2017-07-14 16:54:24.692338380 +0200
++++ b/src/61_osm_import/OSMParser.cpp	2017-07-17 09:38:20.519980225 +0200
+@@ -983,7 +983,7 @@
+ 	handleRoad(_currentWay.id, roadName, roadType, roadGeometry);
+ 
+ 	boost::shared_ptr<geos::geom::CoordinateSequence> cs(CoordinatesSystem::GetInstanceCoordinatesSystem().getGeometryFactory().
+-		getCoordinateSequenceFactory()->create(0, 2));
++		getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 	size_t rank(0);
+ 	graph::MetricOffset metricOffset(0);
+ 
+@@ -1017,7 +1017,7 @@
+ 		handleCrossing(node.id, convertedPoint);
+ 		if(!isLast)
+ 		{
+-			cs.reset(CoordinatesSystem::GetInstanceCoordinatesSystem().getGeometryFactory().getCoordinateSequenceFactory()->create(0, 2));
++			cs.reset(CoordinatesSystem::GetInstanceCoordinatesSystem().getGeometryFactory().getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 			cs->add(*convertedPoint->getCoordinate());
+ 		}
+ 		++rank;
+diff -Naur a/src/65_public_biking/PublicBikeJourneyPlannerResult.cpp b/src/65_public_biking/PublicBikeJourneyPlannerResult.cpp
+--- a/src/65_public_biking/PublicBikeJourneyPlannerResult.cpp	2017-07-14 16:48:26.209209111 +0200
++++ b/src/65_public_biking/PublicBikeJourneyPlannerResult.cpp	2017-07-17 09:51:03.261564688 +0200
+@@ -179,7 +179,7 @@
+ 
+ 			if(!_journeys.empty()) {
+ 				for (PublicBikeJourneyPlannerResult::Journeys::const_iterator it(_journeys.begin()); it != _journeys.end(); ++it) {
+-					geos::geom::CoordinateSequence *coords(gf.getCoordinateSequenceFactory()->create(0,2));
++					geos::geom::CoordinateSequence *coords(gf.getCoordinateSequenceFactory()->create(std::size_t(0),2));
+ 
+ 					BOOST_FOREACH(const graph::ServicePointer& su,it->getServiceUses())
+ 					{

@@ -1,0 +1,156 @@
+diff -Naur server/src/00_framework/CoordinatesSystem.cpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/00_framework/CoordinatesSystem.cpp
+--- a/src/00_framework/CoordinatesSystem.cpp	2017-07-14 16:48:25.953209728 +0200
++++ b/src/00_framework/CoordinatesSystem.cpp	2017-07-16 22:54:25.904248759 +0200
+@@ -50,7 +50,7 @@
+ 	boost::shared_ptr<geos::geom::Point> CoordinatesSystem::convertPoint(
+ 		const geos::geom::Point& source
+ 	) const	{
+-		return static_pointer_cast<Point,Geometry>(convertGeometry(static_cast<const Geometry&>(source)));
++		return dynamic_pointer_cast<Point,Geometry>(convertGeometry(static_cast<const Geometry&>(source)));
+ 	}
+ 
+ 
+diff -Naur server/src/00_framework/GeometryField.hpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/00_framework/GeometryField.hpp
+--- a/src/00_framework/GeometryField.hpp	2017-07-14 16:54:24.536338762 +0200
++++ b/src/00_framework/GeometryField.hpp	2017-07-17 08:31:52.496615460 +0200
+@@ -153,7 +153,7 @@
+ 				if(value)
+ 				{
+ 					return typename GeometryField<T>::_Type(
+-						static_cast<T*>(
++						dynamic_cast<T*>(
+ 							value->clone()
+ 					)	);
+ 				}
+diff -Naur server/src/01_util/Env.cpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/01_util/Env.cpp
+--- a/src/01_util/Env.cpp	2017-07-14 16:54:24.540338753 +0200
++++ b/src/01_util/Env.cpp	2017-07-16 23:04:49.082276718 +0200
+@@ -180,7 +180,7 @@
+ 				return make_pair(object, sourceObject);
+ 			}
+ 
+-			return make_pair(object, shared_ptr<Registrable>());
++			return make_pair(object, boost::shared_ptr<Registrable>());
+ 		}
+ 
+ 
+diff -Naur server/src/01_util/ParametersMap.cpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/01_util/ParametersMap.cpp
+--- a/src/01_util/ParametersMap.cpp	2017-07-14 16:54:24.540338753 +0200
++++ b/src/01_util/ParametersMap.cpp	2017-07-16 23:07:15.625812862 +0200
+@@ -498,7 +498,7 @@
+ 			{
+ 				if(dynamic_cast<Point*>(pm._geometry.get()))
+ 				{
+-					Point* point(static_cast<Point*>(pm._geometry.get()));
++					Point* point(dynamic_cast<Point*>(pm._geometry.get()));
+ 					_outputKeyValue("type", "Point", first);
+ 					_os	<< "," << _eol << _indentation << "\"coordinates\"" << _sep;
+ 					_indent();
+@@ -510,7 +510,7 @@
+ 				}
+ 				else if(dynamic_cast<LineString*>(pm._geometry.get()))
+ 				{
+-					LineString* lineString(static_cast<LineString*>(pm._geometry.get()));
++					LineString* lineString(dynamic_cast<LineString*>(pm._geometry.get()));
+ 					_outputKeyValue("type", "LineString", first);
+ 					_os	<< "," << _eol << _indentation << "\"coordinates\"" << _sep;
+ 					_indent();
+diff -Naur server/src/10_db/101_sqlite/SQLiteDB.h /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/10_db/101_sqlite/SQLiteDB.h
+--- a/src/10_db/101_sqlite/SQLiteDB.h	2017-07-14 16:48:25.969209689 +0200
++++ b/src/10_db/101_sqlite/SQLiteDB.h	2017-07-14 18:06:15.703677625 +0200
+@@ -31,7 +31,7 @@
+ #include <boost/filesystem/path.hpp>
+ #include <boost/thread/tss.hpp>
+ #include <boost/thread/recursive_mutex.hpp>
+-#include <spatialite/sqlite3.h>
++#include <spatialite/sqlite.h>
+ 
+ namespace synthese
+ {
+diff -Naur server/src/18_graph/Edge.cpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/18_graph/Edge.cpp
+--- a/src/18_graph/Edge.cpp	2017-07-14 16:54:24.580338654 +0200
++++ b/src/18_graph/Edge.cpp	2017-07-17 08:44:19.218237744 +0200
+@@ -548,7 +548,7 @@
+ 				getFromVertex()->hasGeometry() &&
+ 				_next->getFromVertex()->hasGeometry()
+ 			){
+-				CoordinateSequence* cs(geometryFactory.getCoordinateSequenceFactory()->create(0, 2));
++				CoordinateSequence* cs(geometryFactory.getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 				cs->add(*getFromVertex()->getGeometry()->getCoordinate(), false);
+ 				cs->add(*_next->getFromVertex()->getGeometry()->getCoordinate(), false);
+ 				if(cs->size() != 2)
+diff -Naur server/src/18_graph/Path.cpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/18_graph/Path.cpp
+--- a/src/18_graph/Path.cpp	2017-07-14 16:54:24.580338654 +0200
++++ b/src/18_graph/Path.cpp	2017-07-17 08:47:45.713583561 +0200
+@@ -602,7 +602,7 @@
+ 
+ 			// Geos factories
+ 			const GeometryFactory& gf(CoordinatesSystem::GetDefaultGeometryFactory());
+-			geos::geom::CoordinateSequence *coords(gf.getCoordinateSequenceFactory()->create(0,2));
++			geos::geom::CoordinateSequence *coords(gf.getCoordinateSequenceFactory()->create(std::size_t(0),2));
+ 
+ 			// Handle empty roads
+ 			if(_edges.empty())
+diff -Naur a/src/18_graph/ServicePointer.cpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/18_graph/ServicePointer.cpp
+--- a/src/18_graph/ServicePointer.cpp	2017-07-14 16:54:24.584338645 +0200
++++ b/src/18_graph/ServicePointer.cpp	2017-07-17 08:55:33.300100447 +0200
+@@ -338,7 +338,7 @@
+ 				CoordinatesSystem::GetDefaultGeometryFactory()
+ 			);
+ 
+-			CoordinateSequence* cs(geometryFactory.getCoordinateSequenceFactory()->create(0, 2));
++			CoordinateSequence* cs(geometryFactory.getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 			bool drtAreaSequence = false;
+ 			bool hasDRTArea = false;
+ 			Coordinate previousCoordinates;
+@@ -396,7 +396,7 @@
+ 			}
+ 			else if (hasDRTArea)
+ 			{
+-				CoordinateSequence* csTwoPoints(geometryFactory.getCoordinateSequenceFactory()->create(0, 2));
++				CoordinateSequence* csTwoPoints(geometryFactory.getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 				csTwoPoints->add(cs->getAt(0));
+ 				csTwoPoints->add(cs->getAt(cs->getSize()-1));
+ 				return boost::shared_ptr<LineString>(geometryFactory.createLineString(csTwoPoints));
+diff -Naur a/src/19_inter_synthese/SpecificPostInstall.cpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/19_inter_synthese/SpecificPostInstall.cpp
+--- a/src/19_inter_synthese/SpecificPostInstall.cpp	2017-07-14 16:54:24.588338635 +0200
++++ b/src/19_inter_synthese/SpecificPostInstall.cpp	2017-07-16 23:18:29.443665166 +0200
+@@ -114,7 +114,7 @@
+ 			Request& request
+ 		) {
+ 
+-			shared_ptr<InterSYNTHESEConfig> myConfig(getMyConfig());
++			boost::shared_ptr<InterSYNTHESEConfig> myConfig(getMyConfig());
+ 			if(!myConfig)
+ 			{
+ 				Log::GetInstance().info("Creating InterSYNTHESEConfig " + std::string(MASTER_NAME));
+@@ -125,7 +125,7 @@
+ 				myConfig = getMyConfig();
+ 			}
+ 
+-			shared_ptr<InterSYNTHESESlave> mySlave(getMySlave());
++			boost::shared_ptr<InterSYNTHESESlave> mySlave(getMySlave());
+ 			if(!mySlave)
+ 			{
+ 				Log::GetInstance().info("Creating InterSYNTHESESlave " + std::string(SLAVE_NAME));
+diff -Naur server/src/61_osm_import/OSMParser.cpp /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/src/61_osm_import/OSMParser.cpp
+--- a/src/61_osm_import/OSMParser.cpp	2017-07-14 16:54:24.692338380 +0200
++++ b/src/61_osm_import/OSMParser.cpp	2017-07-16 22:46:46.753705153 +0200
+@@ -983,7 +983,7 @@
+ 	handleRoad(_currentWay.id, roadName, roadType, roadGeometry);
+ 
+ 	boost::shared_ptr<geos::geom::CoordinateSequence> cs(CoordinatesSystem::GetInstanceCoordinatesSystem().getGeometryFactory().
+-		getCoordinateSequenceFactory()->create(0, 2));
++		getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 	size_t rank(0);
+ 	graph::MetricOffset metricOffset(0);
+ 
+@@ -1017,7 +1017,7 @@
+ 		handleCrossing(node.id, convertedPoint);
+ 		if(!isLast)
+ 		{
+-			cs.reset(CoordinatesSystem::GetInstanceCoordinatesSystem().getGeometryFactory().getCoordinateSequenceFactory()->create(0, 2));
++			cs.reset(CoordinatesSystem::GetInstanceCoordinatesSystem().getGeometryFactory().getCoordinateSequenceFactory()->create(std::size_t(0), 2));
+ 			cs->add(*convertedPoint->getCoordinate());
+ 		}
+ 		++rank;

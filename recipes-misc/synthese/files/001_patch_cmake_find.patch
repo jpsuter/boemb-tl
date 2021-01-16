@@ -1,0 +1,36 @@
+diff -Naur server/cmake/FindGeosc.cmake /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/cmake/FindGeosc.cmake
+--- a/cmake/FindGeosc.cmake	2017-07-14 16:48:25.861209949 +0200
++++ b/cmake/FindGeosc.cmake	2017-07-14 17:40:57.524331285 +0200
+@@ -25,7 +25,7 @@
+       find_library(GEOSC_LIBRARY NAMES geosc PATHS $ENV{GEOSC_DIR}/lib /opt/rcs/geos/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
+    ELSE()
+       find_path(GEOSC_INCLUDE_DIR NAMES geos_c.h PATHS /opt/rcs/geos/capi /usr/local/include /usr/include NO_DEFAULT_PATH)
+-      find_library(GEOSC_LIBRARY NAMES geosc PATHS /opt/rcs/geos/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
++      find_library(GEOSC_LIBRARY NAMES geos_c PATHS /opt/rcs/geos/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
+    ENDIF()
+ 
+ 
+diff -Naur server/cmake/FindHaru.cmake /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/cmake/FindHaru.cmake
+--- a/cmake/FindHaru.cmake	2017-07-14 16:48:25.861209949 +0200
++++ b/cmake/FindHaru.cmake	2017-07-14 17:40:31.812409285 +0200
+@@ -24,7 +24,7 @@
+       find_library(HARU_LIBRARY NAMES haru PATHS $ENV{HARU_DIR}/lib /opt/rcs/haru/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
+    ELSE()
+       find_path(HARU_INCLUDE_DIR NAMES hpdf.h PATHS /opt/rcs/haru/include /usr/local/include /usr/include NO_DEFAULT_PATH)
+-      find_library(HARU_LIBRARY NAMES haru PATHS /opt/rcs/haru/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
++      find_library(HARU_LIBRARY NAMES hpdf PATHS /opt/rcs/haru/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
+    ENDIF()
+ 
+ endif(WIN32)
+diff -Naur server/cmake/FindZlib.cmake /BB/tmp/work/core2-64-poky-linux/synthese/3.10.8.13+gitAUTOINC+c834347285-r0/git/server/cmake/FindZlib.cmake
+--- a/cmake/FindZlib.cmake	2017-07-14 16:48:25.861209949 +0200
++++ b/cmake/FindZlib.cmake	2017-07-14 17:40:07.280483718 +0200
+@@ -24,7 +24,7 @@
+       find_library(ZLIB_LIBRARY NAMES zlib PATHS $ENV{ZLIB_DIR}/lib /opt/rcs/zlib/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
+    ELSE()
+       find_path(ZLIB_INCLUDE_DIR NAMES zlib.h PATHS /opt/rcs/zlib/include /usr/local/include /usr/include NO_DEFAULT_PATH)
+-      find_library(ZLIB_LIBRARY NAMES zlib PATHS /opt/rcs/zlib/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
++      find_library(ZLIB_LIBRARY NAMES z PATHS /opt/rcs/zlib/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
+    ENDIF()
+ 
+ endif(WIN32)
